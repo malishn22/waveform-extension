@@ -3,6 +3,12 @@
 Shows what you're playing on **Bandcamp**, **Beatport** and **SoundCloud** as a Discord
 "Listening to…" status, with cover art and a progress bar.
 
+<p>
+  <img src="docs/bandcamp.png" width="273" alt="Listening to Bandcamp: Brooks Ave by Chris Liebing, from Evolver">
+  <img src="docs/beatport.png" width="273" alt="Listening to Beatport: Dārin (Original Mix) by Phil Berg, 142 BPM, Ab minor">
+  <img src="docs/soundcloud.png" width="273" alt="Listening to SoundCloud: SNTS @ Technokunst by Technokunst">
+</p>
+
 A browser extension can't talk to Discord directly, so a small helper program bridges the two.
 The browser starts and stops it on its own.
 
