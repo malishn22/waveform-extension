@@ -1,0 +1,23 @@
+# Dependencies and build output
+node_modules
+dist
+helper/dist
+
+# Helper runtime files. config.json holds your Discord application ID(s); the host manifest
+# and dev wrappers contain absolute paths with your username. Only config.example.json is tracked.
+config.json
+!helper/config.example.json
+com.waveform.presence.json
+helper/waveform-helper-dev.*
+
+# Extension signing key, if you ever pack a .crx (the public half in extension-id.ts is fine)
+*.pem
+*.crx
+
+# Local env / OS / editor
+.env
+.env.*
+.DS_Store
+Thumbs.db
+.vscode
+.idea

@@ -1,0 +1,30 @@
+name: Build helper
+
+on:
+  push:
+    paths: ['helper/**', 'extension-id.ts', 'src/messages.ts', '.github/workflows/helper.yml']
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm package:helper
+      - uses: actions/upload-artifact@v4
+        with:
+          name: waveform-helper-${{ runner.os }}
+          path: |
+            helper/dist/waveform-helper*
+            helper/dist/config.example.json
