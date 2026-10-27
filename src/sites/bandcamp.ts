@@ -1,5 +1,39 @@
-import { $, absUrl, meta, parseTime, text } from './dom'
+import { $, absUrl, meta, parseTime, sessionMetadata, text } from './dom'
 import type { Site, Track } from './types'
+
+// Compilations list the real artist in the track title: "Machka - Noise 11%" by "Various Artists".
+function splitVarious(title: string, artist: string) {
+  const split = /^(.+?) - (.+)$/.exec(title)
+  return split && /^various( artists)?$/i.test(artist)
+    ? { title: split[2], subtitle: split[1] }
+    : { title, subtitle: artist }
+}
+
+// Playlist pages (bandcamp.com/<user>/playlist/<slug>) are a separate Vue app whose audio is not
+// in the DOM. The page keeps navigator.mediaSession current (metadata and playbackState), and its
+// scrubber is a range input whose value/max are position/duration in seconds. Checked against a
+// live playlist on 2026-10-27.
+function readPlaylist(): Track | null {
+  const session = sessionMetadata()
+  if (!session) return null
+  const { title, subtitle } = splitVarious(session.title, session.artist)
+  const range = $<HTMLInputElement>('.track-progress input[type="range"]')
+  const [elapsed, total] = [...document.querySelectorAll('.track-progress .time')].map((e) =>
+    parseTime(e.textContent ?? ''),
+  )
+  const row = $('.track-list-item.currently-playing')
+  const link = row?.querySelector<HTMLAnchorElement>('a[href*="/track/"], a[href*="/album/"]')
+  return {
+    title,
+    subtitle,
+    art: absUrl(session.art),
+    url: absUrl(link?.getAttribute('href')) ?? location.href,
+    position: range ? Number(range.value) || 0 : (elapsed ?? 0),
+    duration: range ? Number(range.max) || 0 : (total ?? 0),
+    paused: navigator.mediaSession.playbackState !== 'playing',
+    extra: session.album && session.album !== title ? session.album : undefined,
+  }
+}
 
 // Fan collection pages (bandcamp.com/<username>, yours or anyone's) play through a bottom
 // "carousel" player built with Knockout. Its data-bind attributes name the field they show
@@ -8,12 +42,9 @@ import type { Site, Track } from './types'
 const bind = (field: string) => `#carousel-player [data-bind*="currentTrack().${field}"]`
 
 function readCollection(audio: HTMLAudioElement | null): Track | null {
-  let title = text(bind('trackTitle'))
-  if (!title || !audio?.src) return null
-  let subtitle = text(bind('artist'))
-  // Compilations list the real artist in the track title: "Machka - Noise 11%".
-  const split = /^(.+?) - (.+)$/.exec(title)
-  if (split && /^various( artists)?$/i.test(subtitle)) [, subtitle, title] = split
+  const rawTitle = text(bind('trackTitle'))
+  if (!rawTitle || !audio?.src) return null
+  const { title, subtitle } = splitVarious(rawTitle, text(bind('artist')))
   const album = text(bind('title'))
   return {
     title,
@@ -34,6 +65,7 @@ export const bandcamp: Site = {
   name: 'Bandcamp',
   matches: (host) => host === 'bandcamp.com' || host.endsWith('.bandcamp.com'),
   read() {
+    if (location.pathname.includes('/playlist/')) return readPlaylist()
     const audio = $<HTMLAudioElement>('audio')
     if ($('#carousel-player')) return readCollection(audio)
     const discover = $('.discover-player')

@@ -26,5 +26,5 @@ export function sessionMetadata() {
   const m = navigator.mediaSession?.metadata
   if (!m?.title) return null
   const art = m.artwork?.length ? m.artwork[m.artwork.length - 1].src : undefined
-  return { title: m.title, artist: m.artist, art }
+  return { title: m.title, artist: m.artist, album: m.album, art }
 }
