@@ -41,17 +41,28 @@ function readPlaylist(): Track | null {
 // layout classes. Checked against a live collection page on 2026-10-21.
 const bind = (field: string) => `#carousel-player [data-bind*="currentTrack().${field}"]`
 
+function stripLabel(title: string, album: string, buyUrl: string | undefined) {
+  const split = /^(.+?) - (.+)$/.exec(title)
+  if (!split) return title
+  const slug = split[1].toLowerCase().replace(/[^a-z0-9]/g, '')
+  const account = buyUrl ? new URL(buyUrl).hostname.split('.')[0] : ''
+  return slug === account || split[2] === album ? split[2] : title
+}
+
 function readCollection(audio: HTMLAudioElement | null): Track | null {
   const rawTitle = text(bind('trackTitle'))
   if (!rawTitle || !audio?.src) return null
-  const { title, subtitle } = splitVarious(rawTitle, text(bind('artist')))
   const album = text(bind('title'))
+  // The player's own title link has no href; the "buy now" link carries the release URL.
+  const buyUrl = absUrl($<HTMLAnchorElement>('#carousel-player [data-bind*="tralbumBuyUrl"]')?.getAttribute('href'))
+  const various = splitVarious(rawTitle, text(bind('artist')))
+  const title = various.title === rawTitle ? stripLabel(rawTitle, album, buyUrl) : various.title
+  const { subtitle } = various
   return {
     title,
     subtitle,
     art: absUrl($<HTMLImageElement>(`${bind('artURL')}`)?.src),
-    // The player's own title link has no href; the "buy now" link carries the release URL.
-    url: absUrl($<HTMLAnchorElement>('#carousel-player [data-bind*="tralbumBuyUrl"]')?.getAttribute('href')) ?? location.href,
+    url: buyUrl ?? location.href,
     position: audio.currentTime,
     duration: Number.isFinite(audio.duration) ? audio.duration : 0,
     paused: audio.paused,
